@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>{{ product.name }}</h2>
+<p>Prijs: €{{ '%.2f'|format(product.price) }}</p>
+<p>Voorraad: {{ product.stock }}</p>
+
+{% if session.get('user_id') %}
+<form method="POST" action="{{ url_for('order') }}">
+  <input type="hidden" name="product_id" value="{{ product.id }}">
+  <div class="mb-3">
+    <label for="quantity" class="form-label">Aantal</label>
+    <input type="number" name="quantity" id="quantity" class="form-control" min="1" max="{{ product.stock }}" value="1" required>
+  </div>
+  <button type="submit" class="btn btn-success">Bestellen</button>
+</form>
+{% else %}
+<p>Je moet <a href="{{ url_for('login') }}">inloggen</a> om te bestellen.</p>
+{% endif %}
+{% endblock %}

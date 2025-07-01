@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Gebruikersbeheer</h2>
+
+<table class="table">
+  <thead>
+    <tr>
+      <th>Email</th>
+      <th>Rol</th>
+      <th>Wijzig rol</th>
+      <th>Geblokkeerd</th>  {# Nieuwe kolom #}
+      <th>Actie</th>        {# Nieuwe kolom voor knop #}
+    </tr>
+  </thead>
+  <tbody>
+    {% for user in users %}
+    <tr>
+      <td>{{ user.email }}</td>
+      <td>{{ user.role }}</td>
+      <td>
+        <form method="POST" action="{{ url_for('update_user_role') }}">
+          <input type="hidden" name="user_id" value="{{ user.id }}">
+          <select name="role" onchange="this.form.submit()">
+            <option value="beheerder" {% if user.role == 'beheerder' %}selected{% endif %}>Beheerder</option>
+            <option value="verkoper" {% if user.role == 'verkoper' %}selected{% endif %}>Verkoper</option>
+            <option value="klant" {% if user.role == 'klant' %}selected{% endif %}>Klant</option>
+          </select>
+        </form>
+      </td>
+      <td>{{ 'Ja' if user.is_blocked else 'Nee' }}</td>  {# Toon blokkade status #}
+      <td>
+        <form method="POST" action="{{ url_for('toggle_block_user', user_id=user.id) }}">
+          <button type="submit" class="btn btn-sm {% if user.is_blocked %}btn-success{% else %}btn-danger{% endif %}">
+            {% if user.is_blocked %}Deblokkeren{% else %}Blokkeren{% endif %}
+          </button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<a href="{{ url_for('admin') }}" class="btn btn-secondary mt-3">Terug naar Admin Dashboard</a>
+{% endblock %}
