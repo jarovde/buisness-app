@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="nl">
+<head>
+    <meta charset="utf-8">
+    <title>Product Toevoegen</title>
+</head>
+<body>
+    <h1>Nieuw Product Toevoegen</h1>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <ul>
+          {% for category, message in messages %}
+            <li style="color: {% if category == 'error' %}red{% else %}green{% endif %};">
+              {{ message }}
+            </li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+    {% endwith %}
+
+    <form method="post">
+        <label>Naam:</label><br>
+        <input type="text" name="name"><br><br>
+
+        <label>Prijs (€):</label><br>
+        <input type="text" name="price"><br><br>
+
+        <label>Hoeveelheid:</label><br>
+        <input type="text" name="quantity"><br><br>
+
+        <input type="submit" value="Product Toevoegen">
+    </form>
+
+    <br>
+    <a href="{{ url_for('product_catalog') }}">Terug naar productcatalogus</a>
+</body>
+</html>

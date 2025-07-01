@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+{% block content %}
+<h1>Productcatalogus</h1>
+<div class="row">
+  {% for product in products %}
+    <div class="col-md-4 mb-3">
+      <div class="card">
+        <div class="card-body">
+          <h5 class="card-title">{{ product.name }}</h5>
+          <p>Prijs: &euro; {{ "%.2f"|format(product.price) }}</p>
+          <p>Voorraad: {{ product.stock }}</p>
+          <form method="POST" action="{{ url_for('order') }}">
+            <input type="hidden" name="product_id" value="{{ product.id }}">
+            <div class="input-group mb-3">
+              <input type="number" name="quantity" class="form-control" value="1" min="1" max="{{ product.stock }}">
+              <button type="submit" class="btn btn-primary">Bestel</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  {% else %}
+    <p>Geen producten beschikbaar.</p>
+  {% endfor %}
+</div>
+{% endblock %}
