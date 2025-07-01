@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Gebruikers beheren</h2>
+
+<table class="table">
+  <thead>
+    <tr>
+      <th>E-mail</th>
+      <th>Huidige rol</th>
+      <th>Rol aanpassen</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for user in users %}
+    <tr>
+      <td>{{ user.email }}</td>
+      <td>{{ user.role }}</td>
+      <td>
+        <form method="POST" class="d-flex align-items-center" style="gap:0.5rem;">
+          <input type="hidden" name="user_id" value="{{ user.id }}">
+          <select name="role" class="form-select form-select-sm" required>
+            <option value="baas" {% if user.role == 'baas' %}selected{% endif %}>Baas</option>
+            <option value="onderhouder" {% if user.role == 'onderhouder' %}selected{% endif %}>Onderhouder</option>
+            <option value="medewerker" {% if user.role == 'medewerker' %}selected{% endif %}>Medewerker</option>
+            <option value="klant" {% if user.role == 'klant' %}selected{% endif %}>Klant</option>
+          </select>
+          <button type="submit" class="btn btn-primary btn-sm">Wijzig</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<a href="{{ url_for('admin') }}" class="btn btn-secondary">Terug naar admin dashboard</a>
+{% endblock %}
