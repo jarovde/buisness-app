@@ -186,6 +186,19 @@ def update_stock(product_id):
     flash('Voorraad bijgewerkt!', 'success')
     return redirect(url_for('admin'))
 
+@app.route('/admin/delete_product/<int:product_id>', methods=['POST'])
+@admin_required
+def delete_product(product_id):
+    product = Product.query.get_or_404(product_id)
+    try:
+        db.session.delete(product)
+        db.session.commit()
+        flash(f'Product "{product.name}" is verwijderd.', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash('Er is een fout opgetreden bij het verwijderen van het product.', 'danger')
+    return redirect(url_for('admin'))
+
 @app.route('/admin/sales_data')
 @admin_required
 def sales_data():
@@ -198,6 +211,7 @@ def sales_data():
         dates.append(day.strftime("%Y-%m-%d"))
         counts.append(count)
     return jsonify({'dates': dates, 'counts': counts})
+
 @app.route('/whoami')
 def whoami():
     if 'user_id' in session:
@@ -212,3 +226,4 @@ if __name__ == '__main__':
     with app.app_context():
         db.create_all()
     app.run(debug=False, host='0.0.0.0')
+
