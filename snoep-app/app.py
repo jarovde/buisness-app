@@ -17,13 +17,17 @@ class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(150), unique=True, nullable=False)
     password_hash = db.Column(db.String(256), nullable=False)
-    is_admin = db.Column(db.Boolean, default=False)
+    role = db.Column(db.String(20), nullable=False, default='klant')  # 'beheerder', 'verkoper', 'klant'
+    is_blocked = db.Column(db.Boolean, default=False)  # Nieuw: blokkade flag
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
 
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
+
+    def is_admin(self):
+        return self.role == 'beheerder'
 
 class Product(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -62,8 +66,8 @@ def admin_required(f):
         user = None
         if 'user_id' in session:
             user = User.query.get(session['user_id'])
-        if not user or not user.is_admin:
-            flash('Alleen admins mogen hier komen.', 'danger')
+        if not user or user.role != 'beheerder':
+            flash('Alleen beheerders mogen hier komen.', 'danger')
             return redirect(url_for('index'))
         return f(*args, **kwargs)
     return decorated_function
@@ -85,6 +89,8 @@ def register():
             return redirect(url_for('register'))
         user = User(email=email)
         user.set_password(password)
+        # Nieuwe gebruikers krijgen standaard rol 'klant'
+        user.role = 'klant'
         db.session.add(user)
         db.session.commit()
         flash('Registratie gelukt! Je kunt nu inloggen.', 'success')
@@ -97,13 +103,16 @@ def login():
         email = request.form['email']
         password = request.form['password']
         user = User.query.filter_by(email=email).first()
-        if user and user.check_password(password):
-            session['user_id'] = user.id
-            session['is_admin'] = user.is_admin
-            flash('Succesvol ingelogd!', 'success')
-            return redirect(url_for('index'))
-        else:
-            flash('Ongeldige login.', 'danger')
+        if user:
+            if user.is_blocked:
+                flash('Je account is geblokkeerd. Neem contact op met de beheerder.', 'danger')
+                return redirect(url_for('login'))
+            if user.check_password(password):
+                session['user_id'] = user.id
+                session['role'] = user.role
+                flash('Succesvol ingelogd!', 'success')
+                return redirect(url_for('index'))
+        flash('Ongeldige login.', 'danger')
     return render_template('login.html')
 
 @app.route('/logout')
@@ -135,10 +144,9 @@ def order():
         flash(f'Niet genoeg voorraad. Huidige voorraad: {product.stock}', 'danger')
         return redirect(url_for('index'))
 
-    # Maak bestelling
     order = Order(user_id=session['user_id'], total_price=product.price * quantity)
     db.session.add(order)
-    db.session.flush()  # om order.id te krijgen
+    db.session.flush()  # order.id nodig
 
     order_item = OrderItem(order_id=order.id, product_id=product.id, quantity=quantity)
     product.stock -= quantity
@@ -212,11 +220,48 @@ def sales_data():
         counts.append(count)
     return jsonify({'dates': dates, 'counts': counts})
 
+@app.route('/admin/users')
+@admin_required
+def admin_users():
+    users = User.query.all()
+    return render_template('admin_users.html', users=users)
+
+@app.route('/admin/users/update_role', methods=['POST'])
+@admin_required
+def update_user_role():
+    user_id = request.form.get('user_id')
+    new_role = request.form.get('role')
+    if new_role not in ['beheerder', 'verkoper', 'klant']:
+        flash('Ongeldige rol.', 'danger')
+        return redirect(url_for('admin_users'))
+    user = User.query.get(user_id)
+    if user:
+        user.role = new_role
+        db.session.commit()
+        flash(f'Rol van {user.email} aangepast naar {new_role}.', 'success')
+    else:
+        flash('Gebruiker niet gevonden.', 'danger')
+    return redirect(url_for('admin_users'))
+
+# Nieuwe route om gebruiker te blokkeren/deblokkeren
+@app.route('/admin/users/toggle_block/<int:user_id>', methods=['POST'])
+@admin_required
+def toggle_block_user(user_id):
+    user = User.query.get(user_id)
+    if user:
+        user.is_blocked = not user.is_blocked
+        db.session.commit()
+        status = 'geblokkeerd' if user.is_blocked else 'gedeblokkeerd'
+        flash(f'Gebruiker {user.email} is nu {status}.', 'success')
+    else:
+        flash('Gebruiker niet gevonden.', 'danger')
+    return redirect(url_for('admin_users'))
+
 @app.route('/whoami')
 def whoami():
     if 'user_id' in session:
         user = User.query.get(session['user_id'])
-        return f"Je bent ingelogd als {user.email}, admin? {user.is_admin}"
+        return f"Je bent ingelogd als {user.email}, rol: {user.role}"
     else:
         return "Niet ingelogd"
 
@@ -226,4 +271,3 @@ if __name__ == '__main__':
     with app.app_context():
         db.create_all()
     app.run(debug=False, host='0.0.0.0')
-
