@@ -1,26 +1,26 @@
 {% extends 'base.html' %}
 {% block content %}
-<h1>Productcatalogus</h1>
+<h1>Producten</h1>
 <div class="row">
   {% for product in products %}
-    <div class="col-md-4 mb-3">
-      <div class="card">
-        <div class="card-body">
-          <h5 class="card-title">{{ product.name }}</h5>
-          <p>Prijs: &euro; {{ "%.2f"|format(product.price) }}</p>
-          <p>Voorraad: {{ product.stock }}</p>
-          <form method="POST" action="{{ url_for('order') }}">
-            <input type="hidden" name="product_id" value="{{ product.id }}">
-            <div class="input-group mb-3">
-              <input type="number" name="quantity" class="form-control" value="1" min="1" max="{{ product.stock }}">
-              <button type="submit" class="btn btn-primary">Bestel</button>
-            </div>
-          </form>
-        </div>
+  <div class="col-md-4">
+    <div class="card mb-3">
+      <div class="card-body">
+        <h5 class="card-title">{{ product.name }}</h5>
+        <p>Prijs: €{{ "%.2f"|format(product.price) }}</p>
+        <p>Voorraad: {{ product.stock }}</p>
+        <form action="{{ url_for('order') }}" method="POST" class="d-flex gap-2">
+          <input type="hidden" name="product_id" value="{{ product.id }}">
+          <input type="number" name="quantity" min="1" max="{{ product.stock }}" value="1" class="form-control" style="width: 80px;">
+          {% if session.get('user_id') %}
+          <button type="submit" class="btn btn-primary">Bestellen</button>
+          {% else %}
+          <a href="{{ url_for('login') }}" class="btn btn-secondary">Inloggen om te bestellen</a>
+          {% endif %}
+        </form>
       </div>
     </div>
-  {% else %}
-    <p>Geen producten beschikbaar.</p>
+  </div>
   {% endfor %}
 </div>
 {% endblock %}
